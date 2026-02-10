@@ -9,8 +9,6 @@ exports.getAllLeads = async (req, res) => {
   const role = req.user.role;
   const roleId = req.user.role_id;
 
-  console.log(req.query);
-
   const page = parseInt(req.query.page) || 1;
   const size = parseInt(req.query.size) || 20;
   const offset = (page - 1) * size;
@@ -121,22 +119,72 @@ exports.getLeadById = async (req, res) => {
 
 exports.getpendingLeads = async (req, res) => {
 
+   // 🔥 JWT se aaya hua data
+  const userId = req.user.id;
+  const role = req.user.role;
+  const roleId = req.user.role_id;
+
   const page = parseInt(req.query.page) || 1;
   const size = parseInt(req.query.size) || 20;
   const offset = (page - 1) * size;
 
-  //const search = req.query.search || '';
+  const search = req.query.search || '';
 
   // const searchSql = `
   //   (c.firstname LIKE ? OR c.lastname LIKE ? OR c.email LIKE ? OR c.contact LIKE ?)
   // `;
 
   try {
-    const [data] = await db.query(`SELECT l.*,CONCAT(c.firstname,' ', c.lastname , '', COALESCE(c.middlename,'')) as client, CONCAT(u.firstname,' ', u.lastname , '', COALESCE(u.middlename,'')) as agent_name , c.email, c.contact, l.status FROM lead_list l inner join client_list c on c.lead_id = l.id join users u on u.id = l.assigned_to where l.status = 0 and l.refund_status = 0 order by l.status asc, unix_timestamp(l.lead_date) desc LIMIT ? OFFSET ?`, [ size, offset]);
+    let dataSql = `SELECT l.*,DATE_FORMAT(l.lead_date, '%d-%m-%Y') as lead_date,DATE_FORMAT(l.date_created, '%d-%m-%Y %H:%i:%s') AS date_created, DATE_FORMAT(l.date_updated, '%d-%m-%Y %H:%i:%s') AS date_updated,CONCAT(c.firstname,' ', c.lastname , '', COALESCE(c.middlename,'')) as client, CONCAT(u.firstname,' ', u.lastname , '', COALESCE(u.middlename,'')) as agent_name , c.email, c.contact, l.status FROM lead_list l inner join client_list c on c.lead_id = l.id join users u on u.id = l.assigned_to where l.status = 0 and l.refund_status = 0`;
 
-    // console.log(searchSql);
+    const dataParams = [];
 
-    const [[{ count }]] = await db.query(`SELECT COUNT(*) as count FROM lead_list l where l.status = 0 and l.refund_status = 0`);
+    if (search) {
+      dataSql += ` AND (c.firstname LIKE ? OR c.lastname LIKE ? OR c.email LIKE ? OR c.contact LIKE ? OR l.airline_pnr LIKE ? OR l.airline LIKE ? OR l.mco LIKE ?)`;
+      dataParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+
+    // 🔐 Role-based filter
+    if (roleId === 2) {
+      // SUPERVISOR → team leads
+      dataSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
+      dataParams.push(userId, userId);
+
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+      // TEAM LEAD / SALES EXECUTIVE → own leads
+      dataSql += ` AND l.assigned_to = ? `;
+      dataParams.push(userId);
+    }
+    // ADMIN / MANAGER → no filter
+
+    dataSql += ` order by l.status asc, unix_timestamp(l.lead_date) desc LIMIT ? OFFSET ?`;
+    dataParams.push(size, offset);
+
+    const [data] = await db.query(dataSql, dataParams);
+
+    let countSql = `SELECT COUNT(*) as count FROM lead_list l where l.status = 0 and l.refund_status = 0`;
+    const countParams = [];
+    if (search) {
+      countSql += ` AND (c.firstname LIKE ? OR c.lastname LIKE ? OR c.email LIKE ? OR c.contact LIKE ? OR l.airline_pnr LIKE ? OR l.airline LIKE ? OR l.mco LIKE ?)`;
+      countParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    // 🔐 Role-based filter
+    if (roleId === 2) {
+      // SUPERVISOR → team leads
+      countSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
+      countParams.push(userId, userId);
+
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+      // TEAM LEAD / SALES EXECUTIVE → own leads
+      countSql += ` AND l.assigned_to = ? `;
+      countParams.push(userId);
+    }
+    // ADMIN / MANAGER → no filter
+
+    const [[{ count }]] = await db.query(countSql, countParams);
+
     return res.json({
       data,
       total: count,
@@ -152,22 +200,74 @@ exports.getpendingLeads = async (req, res) => {
 
 exports.getrefundedLeads = async (req, res) => {
 
+   // 🔥 JWT se aaya hua data
+  const userId = req.user.id;
+  const role = req.user.role;
+  const roleId = req.user.role_id;
+
   const page = parseInt(req.query.page) || 1;
   const size = parseInt(req.query.size) || 20;
   const offset = (page - 1) * size;
 
-  //const search = req.query.search || '';
+  const search = req.query.search || '';
 
   // const searchSql = `
   //   (c.firstname LIKE ? OR c.lastname LIKE ? OR c.email LIKE ? OR c.contact LIKE ?)
   // `;
 
   try {
-    const [data] = await db.query(`SELECT l.*,CONCAT(c.firstname,' ', c.lastname , '', COALESCE(c.middlename,'')) as client, CONCAT(u.firstname,' ', u.lastname , '', COALESCE(u.middlename,'')) as agent_name , c.email, c.contact, l.status FROM lead_list l inner join client_list c on c.lead_id = l.id join users u on u.id = l.assigned_to where l.refund_status != 0 order by l.status asc, unix_timestamp(l.lead_date) desc LIMIT ? OFFSET ?`, [ size, offset]);
+    let dataSql = `SELECT l.*,DATE_FORMAT(l.lead_date, '%d-%m-%Y') as lead_date,DATE_FORMAT(l.date_created, '%d-%m-%Y %H:%i:%s') AS date_created, DATE_FORMAT(l.date_updated, '%d-%m-%Y %H:%i:%s') AS date_updated,CONCAT(c.firstname,' ', c.lastname , '', COALESCE(c.middlename,'')) as client, CONCAT(u.firstname,' ', u.lastname , '', COALESCE(u.middlename,'')) as agent_name , c.email, c.contact, l.status FROM lead_list l inner join client_list c on c.lead_id = l.id join users u on u.id = l.assigned_to where l.refund_status != 0`;
+
+    const dataParams = [];
+
+    if (search) {
+      dataSql += ` AND (c.firstname LIKE ? OR c.lastname LIKE ? OR c.email LIKE ? OR c.contact LIKE ?)`;
+      dataParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    // 🔐 Role-based filter
+    if (roleId === 2) {
+      // SUPERVISOR → team leads
+      dataSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
+      dataParams.push(userId, userId);
+
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+      // TEAM LEAD / SALES EXECUTIVE → own leads
+      dataSql += ` AND l.assigned_to = ? `;
+      dataParams.push(userId);
+    }
+    // ADMIN / MANAGER → no filter
+
+    dataSql += ` order by l.status asc, unix_timestamp(l.lead_date) desc LIMIT ? OFFSET ?`;
+    dataParams.push(size, offset);
+
+
+    
+    const [data] = await db.query(dataSql, dataParams);
 
     // console.log(searchSql);
 
-    const [[{ count }]] = await db.query(`SELECT COUNT(*) as count FROM lead_list l where l.refund_status != 0`);
+    let countSql = `SELECT COUNT(*) as count FROM lead_list l where l.refund_status != 0`;
+    const countParams = [];
+    if (search) {
+      countSql += ` AND (c.firstname LIKE ? OR c.lastname LIKE ? OR c.email LIKE ? OR c.contact LIKE ?)`;
+      countParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    // 🔐 Role-based filter
+    if (roleId === 2) {
+      // SUPERVISOR → team leads
+      countSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
+      countParams.push(userId, userId);
+
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+      // TEAM LEAD / SALES EXECUTIVE → own leads
+      countSql += ` AND l.assigned_to = ? `;
+      countParams.push(userId);
+    }
+    // ADMIN / MANAGER → no filter
+
+    const [[{ count }]] = await db.query(countSql, countParams);
     return res.json({
       data,
       total: count,
@@ -572,5 +672,19 @@ exports.downloadLeads = async (req, res) => {
   );
 
   res.send(buffer);
+};
+
+exports.refundLead = async (req, res) => {
+  const { id, comment, refundType } = req.body;
+
+  await db.execute(`UPDATE lead_list SET refund_status=?, refund_comment=? WHERE id=?`, [refundType, comment, id]);
+  res.json({ message: 'Lead refunded' });
+};
+
+exports.removeRefund = async (req, res) => {
+  const id = req.params.id;
+
+  await db.execute(`UPDATE lead_list SET refund_status='', refund_comment='' WHERE id=?`, [id]);
+  res.json({ message: 'Refund removed' });
 };
 

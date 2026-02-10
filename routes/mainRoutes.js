@@ -11,8 +11,8 @@ router.get('/', (req, res) => {
 });
 
 router.get('/leads', authMiddleware,leadController.getAllLeads);
-router.get('/pendingLeads', leadController.getpendingLeads);
-router.get('/refundedLeads', leadController.getrefundedLeads);
+router.get('/pendingLeads', authMiddleware, leadController.getpendingLeads);
+router.get('/refundedLeads', authMiddleware, leadController.getrefundedLeads);
 router.get('/users', userController.getAllUsers);
 
 const storage = multer.diskStorage({
@@ -47,4 +47,6 @@ router.get('/getDownloadApprovals', authMiddleware, leadController.getDownloadAp
 router.post('/approveDownloadRequest/:id',authMiddleware, leadController.approveDownloadRequest);
 router.post('/rejectDownloadRequest/:id',authMiddleware, leadController.rejectDownloadRequest);
 router.delete('/deleteDownloadRequest/:id',authMiddleware, leadController.deleteDownloadRequest);
+router.post('/refundLead', authMiddleware, leadController.refundLead);
+router.post('/removeRefund/:id', authMiddleware, leadController.removeRefund);
 module.exports = router;
