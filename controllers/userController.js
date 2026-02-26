@@ -3,34 +3,50 @@ const db = require('../db/db'); // your DB connection
 const crypto = require('crypto');
 
 exports.getAllUsers = async (req, res) => {
+  const userId = req.user.id;
+  const roleId = req.user.role_id;
 
   const page = parseInt(req.query.page) || 1;
   const size = parseInt(req.query.size) || 20;
   const offset = (page - 1) * size;
 
-  //const search = req.query.search || '';
+  let whereClause = `u.id != ?`;
+  let params = ['2']; // excluded user id
 
-  // const searchSql = `
-  //   (c.firstname LIKE ? OR c.lastname LIKE ? OR c.email LIKE ? OR c.contact LIKE ?)
-  // `;
+  // 🔒 Team Lead → only their team
+  if (roleId === 2) {
+    whereClause += ` AND u.team_lead = ?`;
+    params.push(userId);
+  }
+
+  // Admin & Manager → no extra restriction
 
   try {
-    const [data] = await db.query(`SELECT u.*,concat(firstname,' ',lastname) as name, ut.name AS usertype_name FROM users as u join user_type as ut on u.u_type = ut.value where u.id != '3' order by concat(firstname,' ',lastname) asc LIMIT ? OFFSET ?`, [ size, offset]);
+    const [data] = await db.query(`SELECT u.*, CONCAT(u.firstname,' ',u.lastname) AS name, ut.name AS usertype_name FROM users u JOIN user_type ut ON u.u_type = ut.value
+      WHERE ${whereClause} ORDER BY name ASC LIMIT ? OFFSET ?`,[...params, size, offset]);
 
-    // console.log(searchSql);
+    const [[{ count }]] = await db.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM users u
+      WHERE ${whereClause}
+      `,
+      params
+    );
 
-    const [[{ count }]] = await db.query(`SELECT COUNT(*) as count FROM users`);
     return res.json({
       data,
       total: count,
       page,
       size
     });
+
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: 'Error fetching leads' });
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching users' });
   }
 };
+
 
 // Save or update user
 exports.createUser = async (req, res) => {
@@ -262,6 +278,19 @@ exports.deleteUser = async (req, res) => {
 };
 
 exports.usersType = async (req, res) => {
+  const userId = req.user.id;
+  const roleId = req.user.role_id;
+
+  if (roleId === 2) {
+    try {
+      const [data] = await db.query(`SELECT * FROM user_type where value != 3 and value != 1 and value != 2 order by id asc`);
+      return res.status(200).json(data);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ status: 2, msg: 'Server error' });
+    }
+  }
+
   try {
     const [data] = await db.query(`SELECT * FROM user_type where value != 3 order by id asc`);
     return res.status(200).json(data);
@@ -285,6 +314,21 @@ exports.getAllActiveUsersName = async (req, res) => {
   try {
     const [data] = await db.query(`SELECT id, CONCAT(firstname,' ', lastname) as name FROM users where status = 1 and u_type not in (3, 1, 2) order by name asc`);
     return res.status(200).json(data);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ status: 2, msg: 'Server error' });
+  }
+};
+
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!id) {
+      return res.status(400).json({ status: 0, msg: 'User ID required' });
+    }
+    const [rows] = await db.query('UPDATE users SET status = ? WHERE id = ?', [status, id]);
+    return res.status(200).json({ status: 1, msg: 'User status updated successfully' });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ status: 2, msg: 'Server error' });
