@@ -14,7 +14,7 @@ exports.getAllUsers = async (req, res) => {
   let params = ['2']; // excluded user id
 
   // 🔒 Team Lead → only their team
-  if (roleId === 2) {
+  if (roleId === 7) {
     whereClause += ` AND u.team_lead = ?`;
     params.push(userId);
   }
@@ -281,7 +281,7 @@ exports.usersType = async (req, res) => {
   const userId = req.user.id;
   const roleId = req.user.role_id;
 
-  if (roleId === 2) {
+  if (roleId === 7) {
     try {
       const [data] = await db.query(`SELECT * FROM user_type where value != 3 and value != 1 and value != 2 order by id asc`);
       return res.status(200).json(data);
@@ -302,7 +302,7 @@ exports.usersType = async (req, res) => {
 
 exports.reportingList = async (req, res) => {
   try {
-    const [data] = await db.query(`SELECT id, CONCAT(firstname,' ', lastname) as name FROM users where u_type not in (3, 4, 5, 6, 7) order by name asc`);
+    const [data] = await db.query(`SELECT id, CONCAT(firstname,' ', lastname) as name FROM users where u_type not in (3, 4, 5, 6, 2, 1) order by name asc`);
     return res.status(200).json(data);
   } catch (err) {
     console.error(err);
