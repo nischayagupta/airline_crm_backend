@@ -45,12 +45,12 @@ exports.getAllLeads = async (req, res) => {
     }
 
     // 🔐 Role-based filter
-    if (roleId === 2) {
+    if (roleId === 7) {
       // SUPERVISOR → team leads
       dataSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
       dataParams.push(userId, userId);
 
-    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 2) {
       // TEAM LEAD / SALES EXECUTIVE → own leads
       dataSql += ` AND l.assigned_to = ? `;
       dataParams.push(userId);
@@ -83,11 +83,11 @@ exports.getAllLeads = async (req, res) => {
       countParams.push(toDate);
     }
 
-    if (roleId === 2) {
+    if (roleId === 7) {
       countSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
       countParams.push(userId, userId);
 
-    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 2) {
       countSql += ` AND l.assigned_to = ? `;
       countParams.push(userId);
     }
@@ -146,12 +146,12 @@ exports.getpendingLeads = async (req, res) => {
 
 
     // 🔐 Role-based filter
-    if (roleId === 2) {
+    if (roleId === 7) {
       // SUPERVISOR → team leads
       dataSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
       dataParams.push(userId, userId);
 
-    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 2) {
       // TEAM LEAD / SALES EXECUTIVE → own leads
       dataSql += ` AND l.assigned_to = ? `;
       dataParams.push(userId);
@@ -171,12 +171,12 @@ exports.getpendingLeads = async (req, res) => {
     }
 
     // 🔐 Role-based filter
-    if (roleId === 2) {
+    if (roleId === 7) {
       // SUPERVISOR → team leads
       countSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
       countParams.push(userId, userId);
 
-    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 2) {
       // TEAM LEAD / SALES EXECUTIVE → own leads
       countSql += ` AND l.assigned_to = ? `;
       countParams.push(userId);
@@ -226,12 +226,12 @@ exports.getrefundedLeads = async (req, res) => {
     }
 
     // 🔐 Role-based filter
-    if (roleId === 2) {
+    if (roleId === 7) {
       // SUPERVISOR → team leads
       dataSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
       dataParams.push(userId, userId);
 
-    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 2) {
       // TEAM LEAD / SALES EXECUTIVE → own leads
       dataSql += ` AND l.assigned_to = ? `;
       dataParams.push(userId);
@@ -255,12 +255,12 @@ exports.getrefundedLeads = async (req, res) => {
     }
 
     // 🔐 Role-based filter
-    if (roleId === 2) {
+    if (roleId === 7) {
       // SUPERVISOR → team leads
       countSql += ` AND (u.team_lead = ? OR l.assigned_to = ?)`;
       countParams.push(userId, userId);
 
-    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 7) {
+    } else if (roleId === 4 || roleId === 5 || roleId === 6 || roleId === 2) {
       // TEAM LEAD / SALES EXECUTIVE → own leads
       countSql += ` AND l.assigned_to = ? `;
       countParams.push(userId);

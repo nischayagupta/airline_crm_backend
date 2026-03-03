@@ -53,4 +53,8 @@ router.post('/removeRefund/:id', authMiddleware, leadController.removeRefund);
 router.put('/updateUserStatus/:id', authMiddleware, userController.updateUserStatus);
 router.get('/dayWiseSales', authMiddleware, chartController.dayWiseSales);
 router.get('/monthWiseSales', authMiddleware, chartController.monthWiseSales);
+router.get('/todaySales', authMiddleware, chartController.todaySales);
+router.get('/monthSales', authMiddleware, chartController.monthSales);
+router.get('/monthPendingLeads', authMiddleware, chartController.monthPendingLeads);
+router.get('/monthRefundedLeads', authMiddleware, chartController.monthRefundedLeads);
 module.exports = router;
